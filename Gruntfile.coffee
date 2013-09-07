@@ -12,4 +12,6 @@ module.exports = (grunt) ->
 
   grunt.loadTasks('tasks')
 
+  grunt.loadNpmTasks('grunt-release')
+
   grunt.registerTask('default', ['mocha_debug'])

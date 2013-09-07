@@ -9,12 +9,18 @@ data =
 task = (grunt) ->
   files = @filesSrc
   done = @async()
+  check = @options().check
+
+  if check
+    check = grunt.file.expand(check)
+  else
+    check = files
 
   checkDebug = =>
     # check which files have debugger statements
     for file in files
       code = grunt.file.read(file)
-      if /^\s*debugger\s*/gm.test(code)
+      if /^\s*debugger/gm.test(code)
         data.debug[file] = true
       else delete data.debug[file]
     startMocha()

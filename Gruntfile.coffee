@@ -2,8 +2,12 @@ module.exports = (grunt) ->
 
   grunt.initConfig
     mocha_debug:
-      nodebug: ['test/nodebug.js']
-      debug: ['test/debug.js']
+      nodebug:
+        options: check: 'test/nodebug.*'
+        src: 'test/nodebug.js'
+      debug:
+        options: check: 'test/debug.*'
+        src: 'test/debug.js'
 
 
   grunt.loadTasks('tasks')

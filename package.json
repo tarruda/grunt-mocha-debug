@@ -1,7 +1,7 @@
 {
   "name": "grunt-mocha-debug",
   "description": "Runs mocha tests in another process, automatically appending --debug-brk if 'debugger' statements are found",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "homepage": "https://github.com/tarruda/grunt-mocha-debug",
   "author": {
     "name": "Thiago de Arruda",

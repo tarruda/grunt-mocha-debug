@@ -1,4 +1,5 @@
 {spawn} = require('child_process')
+path = require('path')
 
 
 data =
@@ -26,6 +27,8 @@ task = (grunt) ->
     startMocha()
 
   startMocha = =>
+    dir = path.dirname(__dirname)
+    files.unshift(path.join(dir, 'runner.coffee'))
     args = ['--compilers', 'coffee:coffee-script'].concat(files)
     if data.debug and Object.keys(data.debug).length
       args.unshift('--debug-brk')

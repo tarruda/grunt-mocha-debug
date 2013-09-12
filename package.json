@@ -1,6 +1,6 @@
 {
   "name": "grunt-mocha-debug",
-  "description": "Runs mocha tests in another process, automatically appending --debug-brk if 'debugger' statements are found",
+  "description": "Grunt task that tuns mocha tests in another node.js process automatically appending --debug-brk if 'debugger' statements are found in the source files, or in a background PhantomJS process.",
   "version": "0.0.4",
   "homepage": "https://github.com/tarruda/grunt-mocha-debug",
   "author": {
@@ -29,8 +29,8 @@
   },
   "devDependencies": {
     "grunt": "~0.4.1",
-    "source-map-support": "~0.2.1",
-    "grunt-release": "~0.5.1"
+    "grunt-release": "~0.5.1",
+    "source-map-support": "~0.2.1"
   },
   "peerDependencies": {
     "grunt": "~0.4.1"
@@ -40,6 +40,8 @@
   ],
   "dependencies": {
     "coffee-script": "~1.6.3",
-    "mocha": "~1.12.1"
+    "mocha": "~1.12.1",
+    "phantomjs-wrapper": "0.0.7",
+    "express": "~3.4.0"
   }
 }

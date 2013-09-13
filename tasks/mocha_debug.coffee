@@ -1,4 +1,5 @@
 {spawn} = require('child_process')
+Stream = require('stream')
 express = require('express')
 path = require('path')
 fs = require('fs')
@@ -6,27 +7,7 @@ phantomjsWrapper = require('phantomjs-wrapper')
 mocha = require('mocha')
 {EventEmitter} = require('events')
 
-
-r = mocha.reporters
-reporterMap =
-  'dot': r.Dot
-  'doc': r.Doc
-  'tap': r.TAP
-  'json': r.JSON
-  'html': r.HTML
-  'list': r.List
-  'min': r.Min
-  'spec': r.Spec
-  'nyan': r.Nyan
-  'xunit': r.XUnit
-  'markdown': r.Markdown
-  'progress': r.Progress
-  'landing': r.Landing
-  'json-cov': r.JSONCov
-  'html-cov': r.HTMLCov
-  'json-stream': r.JSONStream
-  'teamcity': r.Teamcity
-
+reporterMap = require('./lib/reporters')
 
 data =
   debug: {}
@@ -45,7 +26,7 @@ mochaJs = path.join(mochaRoot, 'mocha.js')
 mochaBin = path.join(mochaRoot, 'bin', 'mocha')
 
 
-runner = taskDone = testHtml = server = phantomjs = page = reporter = null
+taskDone = testHtml = server = phantomjs = page = reporter = null
 
 
 setupServer = (grunt, options, done) ->
@@ -54,44 +35,38 @@ setupServer = (grunt, options, done) ->
     res.send(testHtml)
   )
   app.use(express.static(process.cwd()))
-  server = app.listen(options.listenPort, options.listenAddress, =>
+  {listenPort: port, listenAddress: address} = options
+  server = app.listen(port, address, =>
+    port = port or server.address().port
+    grunt.log.ok("Serving tests on http://#{address}:#{port}")
     setupPhantomJS.call(this, grunt, options, done)
   )
 
 
 setupPhantomJS = (grunt, options, done) ->
-  phantomjsWrapper(timeout: 300000, (err, phantom) =>
+  phantomjsWrapper(timeout: options.phantomTimeout, (err, phantom) =>
     phantomjs = phantom
+    grunt.log.ok('PhantomJS started')
     phantomjs.on('closed', =>
-      grunt.log.writeln('Phantomjs exited due to inactivity')
+      page.close()
+      grunt.log.writeln()
+      grunt.log.ok('PhantomJS closed')
       phantomjs = null
     )
     phantomjs.createPage((err, webpage) =>
+      suiteStack = null
+      failed = false
       page = webpage
-      suites = []
-      page.on('consoleMessage', (msg) =>
-        grunt.log.warn("PhantomJS console: #{msg}")
-      )
-      page.on('alert', (msg) =>
-        grunt.log.warn("PhantomJS alert: #{msg}")
-      )
+      if options.displayConsole
+        page.on('consoleMessage', (msg) =>
+          grunt.log.ok("PhantomJS console: #{msg}")
+        )
+      if options.displayAlerts
+        page.on('alert', (msg) =>
+          grunt.log.ok("PhantomJS alert: #{msg}")
+        )
       page.on('callback', (event) =>
-        {test, type, err} = event
-        if test
-          slow = test.slow
-          test.slow = -> slow
-          fullTitle = test.fullTitle
-          test.fullTitle = -> fullTitle
-          test.parent = suites[suites.length - 1] || null
-        switch type
-          when 'suite'
-            suites.push(test)
-          when 'suite end'
-            suites.pop()
-        # forward events to the fake runner
-        runner.emit(type, test, err)
-        if type == 'end'
-          taskDone()
+        reporter.send(event)
       )
       page.on('error', (err) =>
         grunt.log.error("PhantomJS error: #{err.message}")
@@ -101,26 +76,28 @@ setupPhantomJS = (grunt, options, done) ->
         grunt.log.error("PhantomJS error: failed to load #{err.url}")
         taskDone(false)
       )
-      {listenAddress: address, testUrl: url} = options
-      {port} = server.address()
+      {testUrl: url} = options
+      {address, port} = server.address()
       page.open("http://#{address}:#{port}#{url}", => )
     )
   )
 
-
-phantomTask = (grunt, options, done) ->
-  page.reload()
-
-
 preparePhantomTest = (grunt, options, done) ->
+  # just set the reporter class and the done cb
   taskDone = done
-  Reporter = reporterMap[options.reporter.toLowerCase()]
-  runner = new EventEmitter()
-  reporter = new Reporter(runner)
-  testHtml = generateHtml.call(this, grunt, options)
+  testHtml = generateHtml.call(this, options)
+  modulePath = path.join(__dirname, 'lib', 'reporter.js')
+  args = [modulePath, options.reporter]
+  opts = stdio: [0, options.reporterOutput, 2, 'ipc']
+  reporter = spawn(process.execPath, args, opts)
+  reporter.on('close', (code) =>
+    if options.reporterOutput != 1
+      fs.closeSync(options.reporterOutput)
+    done(code == 0)
+  )
 
 
-nodeTask = (grunt, options, done) ->
+nodeTest = (grunt, options, done) ->
   files = options.files
   check = @options().check
 
@@ -148,10 +125,12 @@ nodeTask = (grunt, options, done) ->
     ].concat(args, files)
     if data.debug and Object.keys(data.debug).length
       args.unshift('--debug-brk')
-    opts = stdio: 'inherit'
+    opts = stdio: [0, options.reporterOutput, 2]
     data.child = spawn(mochaBin, args, opts)
     data.child.on('close', (code) ->
       data.child = null
+      if options.reporterOutput != 1
+        fs.closeSync(options.reporterOutput)
       done(code == 0))
 
   if data.child # still running(grunt-contrib-watch?), kill and start again
@@ -161,7 +140,7 @@ nodeTask = (grunt, options, done) ->
     checkDebug()
 
 
-generateHtml = (grunt, options) ->
+generateHtml = (options) ->
   files = options.files
   tags = []
   for file in files
@@ -181,9 +160,7 @@ generateHtml = (grunt, options) ->
     </div>
     """
 
-  css = ''
-  if options.enableHtmlReporter
-    css = "<link rel=\"stylesheet\" href=\"#{mochaCss}\" />"
+  css = "<link rel=\"stylesheet\" href=\"#{mochaCss}\" />"
        
   return (
     """
@@ -208,14 +185,8 @@ mochaBridge = (->
   HtmlReporter = mochaInstance.reporters.HTML
 
   GruntReporter = (runner) ->
-
-    # Setup HTML reporter to output data on the screen
-    if mochaOptions?.enableHtmlReporter
-      HtmlReporter.call(this, runner)
-
     # listen for each mocha event
     events = [
-      'start'
       'test'
       'test end'
       'suite'
@@ -228,13 +199,20 @@ mochaBridge = (->
 
     for event in events
       do (event) ->
-        runner.on(event, (test, err) ->
+        runner.on(event, (obj, err) ->
           ev = err: err, type: event
-          if test
-            ev.test =
-              title: test.title
-              fullTitle: test.fullTitle()
-              slow: test.slow()
+          if obj
+            ev.obj =
+              title: obj.title
+              fullTitle: obj.fullTitle()
+              slow: obj.slow()
+              duration: obj.duration
+              pending: obj.pending
+              state: obj.state
+            if obj.fn
+              ev.obj.fn = obj.fn.toString()
+            if obj.total
+              ev.obj.total = obj.total()
           callPhantom(ev)
         )
 
@@ -252,32 +230,48 @@ mochaBridge = "(#{mochaBridge})();"
 
 module.exports = (grunt) ->
   grunt.registerMultiTask('mocha_debug', grunt.file.readJSON('package.json').description, ->
+
     options = @options(
       reporter: 'dot'
+      reporterOutput: 1
+      displayConsole: true
+      displayAlerts: true
       phantomjs: false
-      startServer: true
+      phantomTimeout: 300000
       listenAddress: "127.0.0.1"
       listenPort: 0
-      testUrl: '/index.html'
+      testUrl: '/'
     )
-
-    done = @async()
 
     if not options.src
       grunt.log.error('Need to specify at least one source file')
-      return done(false)
+      return false
+
+    if options.reporter not of reporterMap or not reporterMap[options.reporter]
+      grunt.log.error("Invalid reporter '#{options.reporter}'")
+      return false
+      
+    output = options.reporterOutput
+
+    if output != 1
+      if typeof output == 'string'
+        options.reporterOutput = fs.openSync(output, 'w+')
+      else
+        grunt.log.error("Invalid reporter output")
+        return false
+
+    done = @async()
 
     options.files = grunt.file.expand(options.src)
 
     if options.phantomjs
       preparePhantomTest.call(this, grunt, options, done)
-      if not phantomjs or phantomjs.closed
-        if options.startServer and not server
-          setupServer.call(this, grunt, options, done)
-        else
-          setupPhantomJS.call(this, grunt, options, done)
+      if not server
+        setupServer.call(this, grunt, options, done)
+      else if not phantomjs or phantomjs.closed
+        setupPhantomJS.call(this, grunt, options, done)
       else
-        phantomTask.call(this, grunt, options, done)
+        page.reload()
     else
-      nodeTask.call(this, grunt, options, done)
+      nodeTest.call(this, grunt, options, done)
   )

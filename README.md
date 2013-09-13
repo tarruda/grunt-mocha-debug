@@ -1,6 +1,6 @@
 # grunt-mocha-debug
 
-> Runs mocha tests in another process, automatically appending --debug-brk if 'debugger' statements are found
+> Grunt task for running mocha tests on node.js/phantomjs
 
 ## Getting Started
 ```shell
@@ -15,9 +15,48 @@ grunt.loadNpmTasks('grunt-mocha-debug');
 
 ### Overview
 
-This task is similar to other mocha grunt tasks, except it will start another
-process. Itt will check each file for ocurrences of the 'debugger' statements
-(nothing fancy just regex test so the debugger statement can only have trailing
-spaces) and if any are found it will start the mocha process using the
-'--debug-brk' argument.
+This task will run mocha test suites on background node/phantomjs processes.
 
+For node.js testing it will check specified files for 'debugger'
+statements(nothing fancy like ast walk, just simple regex search so the
+debugger statement can only have trailing spaces on the line). If any file
+matches the search, the mocha runner process will be started with the
+--debug-brk argument so the code can be stepped with node-inspector.
+
+For phantomjs testing, it will start a background phantomjs instance and reuse
+it across test runs. That means if the task is triggered again by
+grunt-contrib-watch it will only issue a 'reload' command to the test
+page(instead of starting a new phantomjs process for each run like
+grunt-mocha). Task will start an express instance to serve the test
+page which is how phantomjs loads the page(any normal web browser can access
+it too)
+
+### Sample configuration
+
+```coffeescript
+grunt.initConfig
+  mocha_debug:
+    options:
+      # Only search for 'debugger' in the original coffeescript sources(the
+      # default is to check only the test files)
+      check: 'src/**/*.coffee'
+      reporter: 'landing'
+    browser:
+      options:
+        # Port that express will listen on(default is a random port)
+        listenPort: 8888 
+        # Address that express will listen on(default is 127.0.0.1)
+        listenAddress: '0.0.0.0'
+        # Enable phantomjs testing(node.js is the default)
+        phantomjs: true
+        # Files to test(possibly a concatenated/browserified version of your
+        # commonjs project)
+        src: 'build/browser/test.js'
+    nodejs:
+      options:
+        reporter: 'nyan' override reporter for node.js
+        src: 'build/nodejs/**/*.js'
+```
+
+No other setup other than configuring the grunt task is necessary(phantomjs
+will be installed automatically).

@@ -4,6 +4,7 @@ module.exports = (grunt) ->
     mocha_debug:
       options:
         reporter: 'dot'
+        ui: 'tdd'
       browserdebug:
         options:
           phantomjs: true

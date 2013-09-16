@@ -96,7 +96,6 @@ preparePhantomTest = (grunt, options, done) ->
     done(code == 0)
   )
 
-
 nodeTest = (grunt, options, done) ->
   files = options.files
   check = @options().check
@@ -120,9 +119,16 @@ nodeTest = (grunt, options, done) ->
     dir = path.dirname(__dirname)
     files.unshift(path.join(dir, 'runner.coffee'))
     args = [
+      '--ui', options.ui
       '--reporter', options.reporter
       '--compilers', 'coffee:coffee-script'
     ].concat(args, files)
+    if options.checkLeaks
+      if Array.isArray(options.globals)
+        args.unshift(options.globals.join(','))
+        args.unshift('--globals')
+      args.unshift('--check-leaks')
+      
     if data.debug and Object.keys(data.debug).length
       args.unshift('--debug-brk')
     opts = stdio: [0, options.reporterOutput, 2]
@@ -146,9 +152,17 @@ generateHtml = (options) ->
   for file in files
     tags.push("<script src=#{file}></script>")
 
+  mochaOpts =
+    ui: options.ui
+    checkLeaks: options.checkLeaks
+    globals: if options.globals instanceof Array then options.globals else []
+
   body = options.body or
     """
     <div id="mocha">
+      <script>
+      mochaOpts = #{JSON.stringify(mochaOpts)};
+      </script>
       <script src="#{mochaJs}"></script>
       <script>
       #{mochaBridge}
@@ -218,8 +232,9 @@ mochaBridge = (->
 
   mocha.setup(
     reporter: if callPhantom? then GruntReporter else HtmlReporter
-    ui: mochaOptions?.ui or 'bdd'
-    ignoreLeaks: mochaOptions?.ignoreLeaks or false
+    ui: mochaOpts.ui or 'bdd'
+    ignoreLeaks: not mochaOpts.checkLeaks
+    globals: mochaOpts.globals
   )
 
 ).toString()
@@ -233,6 +248,8 @@ module.exports = (grunt) ->
 
     options = @options(
       reporter: 'dot'
+      ui: 'bdd'
+      checkLeaks: false
       reporterOutput: 1
       displayConsole: true
       displayAlerts: true

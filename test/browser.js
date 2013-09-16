@@ -1,8 +1,8 @@
-describe('browser testing!', function() {
-  it('test1', function() {
+suite('browser testing!', function() {
+  test('test1', function() {
     alert('1')
   })
-  it('test2', function() {
+  test('test2', function() {
     console.log('2')
   })
 })

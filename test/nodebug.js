@@ -1,5 +1,5 @@
-describe('nodebug', function() {
-  it('nodebug!', function() {
+suite('nodebug', function() {
+  test('nodebug!', function() {
     // only lone debugger statements are considered
   })
 })

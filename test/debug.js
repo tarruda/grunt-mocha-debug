@@ -1,6 +1,8 @@
-describe('debug', function() {
-  it('debug!', function() {
-    // only lone debugger statements are considered
-    debugger;
-  })
-})
+run({
+  'debug': {
+    'debug!': function() {
+      // only single-line debugger statements are considered
+      debugger;
+    } 
+  }
+});

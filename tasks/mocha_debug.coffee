@@ -1,6 +1,7 @@
 {spawn} = require('child_process')
 Stream = require('stream')
 express = require('express')
+cs = require('coffee-script')
 path = require('path')
 fs = require('fs')
 phantomjsWrapper = require('phantomjs-wrapper')
@@ -24,6 +25,8 @@ mochaRoot = path.join(pluginRoot, 'node_modules', 'mocha')
 mochaCss = path.join(mochaRoot, 'mocha.css')
 mochaJs = path.join(mochaRoot, 'mocha.js')
 mochaBin = path.join(mochaRoot, 'bin', 'mocha')
+runnerJs = cs.compile(fs.readFileSync(path.join(path.dirname(__dirname),
+  'runner.coffee'), 'utf8'))
 
 
 taskDone = testHtml = server = phantomjs = page = reporter = null
@@ -162,7 +165,9 @@ generateHtml = (options) ->
     <div id="mocha">
       <script>
       mochaOpts = #{JSON.stringify(mochaOpts)};
+      #{runnerJs}
       </script>
+      <
       <script src="#{mochaJs}"></script>
       <script>
       #{mochaBridge}

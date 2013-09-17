@@ -29,9 +29,16 @@ grunt-contrib-watch it will only issue a 'reload' command to the test
 page(instead of starting a new phantomjs process for each run like
 grunt-mocha). Task will start an express instance to serve the test
 page which is how phantomjs loads the page(any normal web browser can access
-it too)
+it too).
+
+The 'reporter', 'ui', 'checkLeaks' and 'globals' are also configurable and
+seamless adapted to both types of test runs. There's also a 'reporterOutput'
+options which can be set to a filename to receive the reporter's output(useful
+for reporters like markdown)
+
 
 ### Sample configuration
+
 
 ```coffeescript
 grunt.initConfig
@@ -40,9 +47,14 @@ grunt.initConfig
       # Only search for 'debugger' in the original coffeescript sources(the
       # default is to check only the test files)
       check: 'src/**/*.coffee'
-      reporter: 'landing'
+      reporter: 'nyan'
     browser:
       options:
+        ui: 'tdd'
+        checkLeaks: true
+        globals: ['jquery']
+        reporter: 'markdown'
+        reporterOutput: './results.mkd'
         # Port that express will listen on(default is a random port)
         listenPort: 8888 
         # Address that express will listen on(default is 127.0.0.1)
@@ -54,7 +66,6 @@ grunt.initConfig
         src: 'build/browser/test.js'
     nodejs:
       options:
-        reporter: 'nyan' override reporter for node.js
         src: 'build/nodejs/**/*.js'
 ```
 

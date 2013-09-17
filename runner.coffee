@@ -1,13 +1,13 @@
-run = (tests) ->
+mochaRun = (tests) ->
   for own k, v of tests
     if typeof v == 'function'
-      if k == '*suiteSetup'
+      if k == 'before'
         before(v)
-      else if k == '*suiteTeardown'
+      else if k == 'after'
         after(v)
-      else if k == '*setup'
+      else if k == 'beforeEach'
         beforeEach(v)
-      else if k == '*teardown'
+      else if k == 'afterEach'
         afterEach(v)
       else
         if k.match(/^only:/)
@@ -28,7 +28,7 @@ run = (tests) ->
 
 
 if typeof global != 'undefined'
-  global.run = run
+  global.run = mochaRun
 
 if typeof window != 'undefined'
-  window.run = run
+  window.run = mochaRun

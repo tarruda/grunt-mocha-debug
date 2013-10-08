@@ -167,7 +167,6 @@ generateHtml = (options) ->
       mochaOpts = #{JSON.stringify(mochaOpts)};
       #{runnerJs}
       </script>
-      <
       <script src="#{mochaJs}"></script>
       <script>
       #{mochaBridge}

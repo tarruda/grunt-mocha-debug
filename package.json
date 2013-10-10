@@ -1,7 +1,7 @@
 {
   "name": "grunt-mocha-debug",
   "description": "Easily run mocha tests on node.js/phantomjs",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "homepage": "https://github.com/tarruda/grunt-mocha-debug",
   "author": {
     "name": "Thiago de Arruda",
@@ -43,6 +43,7 @@
     "coffee-script": "~1.6.3",
     "mocha": "~1.12.1",
     "phantomjs-wrapper": "0.0.8",
-    "express": "~3.4.0"
+    "express": "~3.4.0",
+    "run-mocha": "0.0.3"
   }
 }

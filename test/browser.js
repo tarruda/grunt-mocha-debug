@@ -1,4 +1,4 @@
-run({
+runMocha({
   'browser testing!': {
     'test1': function() {
       alert('1')

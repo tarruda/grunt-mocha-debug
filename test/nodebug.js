@@ -1,4 +1,4 @@
-run({
+runMocha({
   'nodebug': {
     'nodebug!': function() { }
   }

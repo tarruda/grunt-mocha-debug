@@ -25,8 +25,8 @@ mochaRoot = path.join(pluginRoot, 'node_modules', 'mocha')
 mochaCss = path.join(mochaRoot, 'mocha.css')
 mochaJs = path.join(mochaRoot, 'mocha.js')
 mochaBin = path.join(mochaRoot, 'bin', 'mocha')
-runnerJs = cs.compile(fs.readFileSync(path.join(path.dirname(__dirname),
-  'runner.coffee'), 'utf8'))
+runnerJs = fs.readFileSync(path.join(path.dirname(__dirname),
+  'node_modules', 'run-mocha', 'index.js'), 'utf8')
 
 
 taskDone = testHtml = server = phantomjs = page = reporter = null
@@ -120,7 +120,7 @@ nodeTest = (grunt, options, done) ->
 
   startMocha = =>
     dir = path.dirname(__dirname)
-    files.unshift(path.join(dir, 'runner.coffee'))
+    files.unshift(path.join(dir, 'node_modules', 'run-mocha', 'index.js'))
     args = [
       '--ui', options.ui
       '--reporter', options.reporter

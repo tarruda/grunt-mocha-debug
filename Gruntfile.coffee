@@ -8,7 +8,7 @@ module.exports = (grunt) ->
       browserdebug:
         options:
           phantomjs: true
-          listenPort: 8888
+          listenPort: 8887
           listenAddress: '0.0.0.0'
           enableHtmlReporter: true
           src: 'test/browser.js'

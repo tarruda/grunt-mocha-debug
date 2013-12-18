@@ -42,7 +42,7 @@
   "dependencies": {
     "coffee-script": "~1.6.3",
     "mocha": "~1.12.1",
-    "phantomjs-wrapper": "0.0.10",
+    "phantomjs-wrapper": "0.0.11",
     "express": "~3.4.0",
     "run-mocha": "0.0.3"
   }
